@@ -1,0 +1,20 @@
+================================================================================
+UserJourney.java
+================================================================================
+
+package com.softwarearchetypes.graphs.userjourney;
+
+import org.jgrapht.Graph;
+import org.jgrapht.alg.shortestpath.AllDirectedPaths;
+import org.jgrapht.graph.DefaultDirectedGraph;
+
+import java.util.Set;
+
+import static java.util.stream.Collectors.toSet;
+
+record UserJourney(UserJourneyId userJourneyId, Graph<State, Condition> graph, State currentState) {}
+
+record State(Set<Product> products) {}
+
+
+record Condition(ConditionType type, Map<String, Object> attributes) {}
