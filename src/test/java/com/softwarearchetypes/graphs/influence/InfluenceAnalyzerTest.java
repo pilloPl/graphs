@@ -7,12 +7,13 @@ import java.util.Set;
 import static com.softwarearchetypes.graphs.influence.Fixtures.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-class InfluanceAnalyzerTest {
+class InfluenceAnalyzerTest {
 
     @Test
     void singleDirectConflict() {
         // given
-        PhysicsInfluence physics = PhysicsInfluence.builder()
+        PhysicsInfluence physics = PhysicsInfluence
+                .builder()
                 .addInfluence(THERMAL, CONDUCTIVITY)
                 .build();
 
@@ -111,14 +112,17 @@ class InfluanceAnalyzerTest {
         Reservation existing2 = new Reservation(processB, LAB_A);
         Reservation existing3 = new Reservation(processC, LAB_B);
         Reservation existing4 = new Reservation(processD, LAB_B);
+        Reservation newReservation = new Reservation(processX, LAB_C);
 
         // when
-        int zonesBefore = new InfluanceAnalyzer(influenceMap).countInfluenceZones(Set.of(existing1, existing2, existing3, existing4));
-        int zonesAfter = new InfluanceAnalyzer(influenceMap).countInfluenceZones(new Reservation(processX, LAB_C), Set.of(existing1, existing2, existing3, existing4));
+        Set<InfluenceZone> zonesBefore = new InfluanceAnalyzer(influenceMap).analyzeInfluenceZones(Set.of(existing1, existing2, existing3, existing4));
+        InfluenceZone zoneAfter = new InfluanceAnalyzer(influenceMap).findInfluenceZone(newReservation, Set.of(existing1, existing2, existing3, existing4, newReservation));
 
         // then
-        assertEquals(2, zonesBefore);
-        assertEquals(1, zonesAfter);
+        assertEquals(2, zonesBefore.size());
+        assertEquals(5, zoneAfter.size());
+        assertEquals(4, zoneAfter.countReservationsToNegotiateWith(newReservation));
+        assertEquals(Set.of(existing1, existing2, existing3, existing4), zoneAfter.getReservationsToNegotiateWith(newReservation));
     }
 
     @Test
@@ -145,13 +149,17 @@ class InfluanceAnalyzerTest {
         Reservation existing2 = new Reservation(processB, LAB_A);
         Reservation existing3 = new Reservation(processC, LAB_B);
         Reservation existing4 = new Reservation(processD, LAB_B);
+        Reservation newReservation = new Reservation(processE, LAB_C);
 
         // when
-        int zonesBefore = new InfluanceAnalyzer(influenceMap).countInfluenceZones(Set.of(existing1, existing2, existing3, existing4));
-        int zonesAfter = new InfluanceAnalyzer(influenceMap).countInfluenceZones(new Reservation(processE, LAB_C), Set.of(existing1, existing2, existing3, existing4));
+        Set<InfluenceZone> zonesBefore = new InfluanceAnalyzer(influenceMap).analyzeInfluenceZones(Set.of(existing1, existing2, existing3, existing4));
+        Set<InfluenceZone> zonesAfter = new InfluanceAnalyzer(influenceMap).analyzeInfluenceZones(Set.of(existing1, existing2, existing3, existing4, newReservation));
+        InfluenceZone independentZone = new InfluanceAnalyzer(influenceMap).findInfluenceZone(newReservation, Set.of(existing1, existing2, existing3, existing4, newReservation));
 
         // then
-        assertEquals(2, zonesBefore);
-        assertEquals(3, zonesAfter);
+        assertEquals(2, zonesBefore.size());
+        assertEquals(3, zonesAfter.size());
+        assertEquals(0, independentZone.countReservationsToNegotiateWith(newReservation));
+        assertEquals(1, independentZone.size());
     }
 }

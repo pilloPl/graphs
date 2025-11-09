@@ -1,12 +1,13 @@
 package com.softwarearchetypes.graphs.influence;
 
 import org.jgrapht.Graph;
+import org.jgrapht.alg.connectivity.BiconnectivityInspector;
 import org.jgrapht.alg.connectivity.ConnectivityInspector;
 import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.SimpleGraph;
 
-import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 class InfluanceAnalyzer {
 
@@ -26,7 +27,30 @@ class InfluanceAnalyzer {
         return conflicts;
     }
 
-    int countInfluenceZones(Set<Reservation> reservations) {
+    Set<InfluenceZone> analyzeInfluenceZones(Set<Reservation> reservations) {
+        Graph<Reservation, DefaultEdge> graph = buildInfluenceGraph(reservations);
+        ConnectivityInspector<Reservation, DefaultEdge> inspector = new ConnectivityInspector<>(graph);
+
+        return inspector.connectedSets().stream()
+                .map(InfluenceZone::new)
+                .collect(Collectors.toSet());
+    }
+
+    InfluenceZone findInfluenceZone(Reservation reservation, Set<Reservation> allReservations) {
+        Graph<Reservation, DefaultEdge> graph = buildInfluenceGraph(allReservations);
+        ConnectivityInspector<Reservation, DefaultEdge> inspector = new ConnectivityInspector<>(graph);
+        Set<Reservation> connectedComponent = inspector.connectedSetOf(reservation);
+        return new InfluenceZone(connectedComponent);
+    }
+
+    BridgingReservations identifyCriticalReservations(Set<Reservation> reservations) {
+        Graph<Reservation, DefaultEdge> graph = buildInfluenceGraph(reservations);
+        BiconnectivityInspector<Reservation, DefaultEdge> inspector = new BiconnectivityInspector<>(graph);
+        Set<Reservation> criticalReservations = inspector.getCutpoints();
+        return new BridgingReservations(criticalReservations);
+    }
+
+    private Graph<Reservation, DefaultEdge> buildInfluenceGraph(Set<Reservation> reservations) {
         Graph<Reservation, DefaultEdge> graph = new SimpleGraph<>(DefaultEdge.class);
         for (Reservation reservation : reservations) {
             graph.addVertex(reservation);
@@ -38,13 +62,6 @@ class InfluanceAnalyzer {
                 }
             }
         }
-        ConnectivityInspector<Reservation, DefaultEdge> inspector = new ConnectivityInspector<>(graph);
-        return inspector.connectedSets().size();
-    }
-
-    int countInfluenceZones(Reservation newReservation, Set<Reservation> with) {
-        Set<Reservation> allReservations = new HashSet<>(with);
-        allReservations.add(newReservation);
-        return countInfluenceZones(allReservations);
+        return graph;
     }
 }
