@@ -9,6 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class BridgingReservationsAnalyzerTest {
 
+    public static final PhysicsProcess PROCESS_A = new PhysicsProcess("A");
+    public static final PhysicsProcess PROCESS_B = new PhysicsProcess("B");
+    public static final PhysicsProcess PROCESS_C = new PhysicsProcess("D");
+    public static final PhysicsProcess PROCESS_D = new PhysicsProcess("C");
+
     @Test
     void independentReservationsAreNotCritical() {
         // given
@@ -123,39 +128,31 @@ class BridgingReservationsAnalyzerTest {
     @Test
     void longChainHasMultipleCriticalReservations() {
         // given
-        PhysicsProcess processA = new PhysicsProcess("A");
-        PhysicsProcess processB = new PhysicsProcess("B");
-        PhysicsProcess processC = new PhysicsProcess("C");
-        PhysicsProcess processD = new PhysicsProcess("D");
 
         PhysicsInfluence physics = PhysicsInfluence.builder()
-                .addInfluence(processA, processB)
-                .addInfluence(processB, processC)
-                .addInfluence(processC, processD)
+                .addInfluence(PROCESS_A, PROCESS_B)
+                .addInfluence(PROCESS_B, PROCESS_C)
+                .addInfluence(PROCESS_C, PROCESS_D)
                 .build();
 
         InfluenceMap influenceMap = InfluenceMap.builder()
                 .withPhysics(physics)
-                .withInfrastructure(emptyInfrastructure())
                 .withLaboratories(Set.of(LAB_A, LAB_B, LAB_C))
                 .build();
 
-        Reservation r1 = new Reservation(processA, LAB_A);
-        Reservation r2 = new Reservation(processB, LAB_B);
-        Reservation r3 = new Reservation(processC, LAB_C);
-        Reservation r4 = new Reservation(processD, LAB_A);
+        Reservation r1 = new Reservation(PROCESS_A, LAB_A);
+        Reservation r2 = new Reservation(PROCESS_B, LAB_B);
+        Reservation r3 = new Reservation(PROCESS_C, LAB_C);
+        Reservation r4 = new Reservation(PROCESS_D, LAB_A);
 
         // when
         BridgingReservations bridging = new InfluanceAnalyzer(influenceMap)
                 .identifyCriticalReservations(Set.of(r1, r2, r3, r4));
 
         // then
-        assertFalse(bridging.isEmpty());
         assertEquals(2, bridging.count());
         assertTrue(bridging.isBridging(r2));
         assertTrue(bridging.isBridging(r3));
-        assertFalse(bridging.isBridging(r1));
-        assertFalse(bridging.isBridging(r4));
     }
 
     @Test
